@@ -9,17 +9,35 @@
 <h1>Kakuro Combinations Finder</h1>
 
 <form method="post" action="">
-    <label for="sum">Enter the sum:</label>
-    <input type="number" id="sum" name="sum" required min="1">
+    <div class="number-row">
+        <?php
+        foreach (range(0, 9) as $i) {
+            echo '<label class="number-checkbox">
+                    <input type="checkbox" name="excludeDigits[]" value="' . $i . '">' . $i . '
+                </label>';
+        }
+        ?>
+    </div>
 
-    <label for="numDigits">Enter the number of digits (1-5):</label>
-    <input type="number" id="numDigits" name="numDigits" required min="1" max="5">
+    <div>
+        <label for="sum">Enter the sum:</label>
+        <input type="number" id="sum" name="sum" required min="1">
+    </div>
 
-    <label for="fixedPositions">Enter positions of fixed digits (comma-separated):</label>
-    <input type="text" id="fixedPositions" name="fixedPositions" placeholder="e.g., 1,3,5">
+    <div>
+        <label for="numDigits">Enter the number of digits (1-5):</label>
+        <input type="number" id="numDigits" name="numDigits" required min="1" max="5">
+    </div>
 
-    <label for="fixedValues">Enter values of fixed digits (comma-separated):</label>
-    <input type="text" id="fixedValues" name="fixedValues" placeholder="e.g., 3,1,2">
+    <div>
+        <label for="fixedPositions">Enter positions of fixed digits (comma-separated):</label>
+        <input type="text" id="fixedPositions" name="fixedPositions" placeholder="e.g., 1,3,5">
+    </div>
+
+    <div>
+        <label for="fixedValues">Enter values of fixed digits (comma-separated):</label>
+        <input type="text" id="fixedValues" name="fixedValues" placeholder="e.g., 3,1,2">
+    </div>
 
     <button type="submit">Find Combinations</button>
 </form>
@@ -31,13 +49,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $numDigits = intval($_POST['numDigits']);
     $fixedPositions = isset($_POST['fixedPositions']) ? explode(',', $_POST['fixedPositions']) : [];
     $fixedValues = isset($_POST['fixedValues']) ? explode(',', $_POST['fixedValues']) : [];
+    $excludeDigits = $_POST['excludeDigits'] ?? [];
 
     // Validate the input
     if (count($fixedPositions) !== count($fixedValues)) {
         echo "<p>Number of fixed positions must match the number of fixed values.</p>";
     } else {
         // Call the function to find combinations
-        $result = findCombinations($sum, $numDigits, $fixedPositions, $fixedValues);
+        $result = findCombinations($sum, $numDigits, $fixedPositions, $fixedValues, $excludeDigits);
 
         echo "<h2>Combinations for sum $sum in $numDigits digits:</h2>";
         if (empty($result)) {
@@ -51,26 +70,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 /**
- * @param $sum
- * @param $numDigits
- * @param $fixedPositions
- * @param $fixedValues
+ * @param int $sum
+ * @param int $numDigits
+ * @param array $fixedPositions
+ * @param array $fixedValues
+ * @param array $excludeDigits
  * @return array
  */
-function findCombinations($sum, $numDigits, $fixedPositions, $fixedValues): array
+function findCombinations(
+    int       $sum,
+    int       $numDigits,
+    array     $fixedPositions,
+    array     $fixedValues,
+    array     $excludeDigits,
+): array
 {
     $combinations = [];
     $maxDigit = 9;
 
     $maxRange = pow($maxDigit + 1, $numDigits);
 
-    for ($i = 0; $i < $maxRange; $i++) {
+    foreach (range(0, $maxRange) as $i) {
         $current = $i;
         $currentCombination = [];
         $validCombination = true;
 
-        for ($j = $numDigits - 1; $j >= 0; $j--) {
+        foreach (range($numDigits - 1, 0) as $j) {
             $digit = $current % 10;
+
+            // Check if the current digit is excluded
+            if (in_array($digit, $excludeDigits)) {
+                $validCombination = false;
+                break;
+            }
+
+            if ($current > 10) {
+                $lastDigit = $current % 10;
+
+                $secondLastDigit = ((int)($current / 10)) % 10;
+                if ($lastDigit < $secondLastDigit) {
+                    $validCombination = false;
+                    break;
+                }
+            }
 
             // Check if the current position is fixed
             if (in_array($j + 1, $fixedPositions)) {
@@ -85,12 +127,11 @@ function findCombinations($sum, $numDigits, $fixedPositions, $fixedValues): arra
             $current = intdiv($current, 10);
         }
 
-        if ($validCombination) {
-
-            // Check if the sum matches and the number of duplicates is within the limit
-            if (array_sum($currentCombination) === $sum && countDuplicates($currentCombination) <= 2) {
-                $combinations[] = $currentCombination;
-            }
+        if ($validCombination
+            && array_sum($currentCombination) === $sum
+            && countDuplicates($currentCombination) <= 1
+        ) {
+            $combinations[] = $currentCombination;
         }
     }
 
@@ -98,10 +139,10 @@ function findCombinations($sum, $numDigits, $fixedPositions, $fixedValues): arra
 }
 
 /**
- * @param $array
+ * @param array $array
  * @return int
  */
-function countDuplicates($array): int
+function countDuplicates(array $array): int
 {
     $count = array_count_values($array);
     $duplicates = 0;
@@ -116,5 +157,42 @@ function countDuplicates($array): int
 }
 
 ?>
+
+<style>
+    html {
+        background: #000000d1;
+        color: white;
+        font-family: system-ui;
+    }
+
+    button {
+        background: black;
+        color: white;
+        padding: 5px 5px;
+    }
+
+    button:hover {
+        background: #345564;
+    }
+
+    div {
+        margin: 10px 0;
+    }
+
+    .number-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .number-checkbox {
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 40px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+    }
+</style>
 </body>
 </html>
