@@ -1,0 +1,43 @@
+.hidden {
+    display: none;
+}
+
+html {
+    background: #000000d1;
+    color: white;
+    font-family: system-ui;
+}
+
+button {
+    background: black;
+    color: white;
+    padding: .5em .5em;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #345564;
+}
+
+div {
+    margin: .5em 0;
+}
+
+input#fixed {
+    width: 2em;
+}
+
+.number-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.number-checkbox {
+    width: 2.5em;
+    height: 2.5em;
+    text-align: center;
+    line-height: 2.5em;
+    border: .1em solid #ccc;
+    cursor: pointer;
+    margin-right: 2em;
+}
